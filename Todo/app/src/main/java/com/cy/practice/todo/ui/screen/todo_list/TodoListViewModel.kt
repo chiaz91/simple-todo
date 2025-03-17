@@ -36,10 +36,7 @@ class TodoListViewModel @Inject constructor(
 
     fun onAction(action: TodoListAction) {
         when (action) {
-            is TodoListAction.AddTodo -> {
-                // create a dummy todo
-                addTodo(Todo(title = "New Todo"))
-            }
+            is TodoListAction.AddTodo -> addTodo(action.todo)
             is TodoListAction.EditTodo -> editTodo(action.todo)
             is TodoListAction.DeleteTodo -> deleteTodo(action.todo)
         }
