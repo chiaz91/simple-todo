@@ -4,24 +4,32 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.imePadding
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material3.Checkbox
-import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.ListItem
 import androidx.compose.material3.LocalTextStyle
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.SwipeToDismissBox
+import androidx.compose.material3.SwipeToDismissBoxState
+import androidx.compose.material3.SwipeToDismissBoxValue
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextField
 import androidx.compose.material3.TextFieldDefaults
+import androidx.compose.material3.rememberSwipeToDismissBoxState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -51,20 +59,21 @@ fun TodoListScreen(
     onAction: (TodoListAction) -> Unit,
     modifier: Modifier = Modifier
 ) {
-    var title by rememberSaveable {  mutableStateOf("") }
+    var title by rememberSaveable { mutableStateOf("") }
 
-    Column( modifier=modifier.imePadding()) {
+    Column(modifier = modifier.imePadding()) {
         TodoList(
             state.todos,
-            {todo, isChecked ->
+            { todo, isChecked ->
                 onAction(TodoListAction.EditTodo(todo.copy(isDone = isChecked)))
             },
-            modifier=Modifier.weight(1f)
+            { todo -> onAction(TodoListAction.DeleteTodo(todo)) },
+            modifier = Modifier.weight(1f)
         )
         Row {
             TextField(
                 value = title,
-                onValueChange = { title=it },
+                onValueChange = { title = it },
                 placeholder = { Text("Enter new task") },
                 textStyle = LocalTextStyle.current.copy(),
                 trailingIcon = {
@@ -98,6 +107,7 @@ fun TodoListScreen(
 private fun TodoList(
     todos: List<Todo>,
     onCheckChanged: (Todo, Boolean) -> Unit,
+    onDelete: (Todo) -> Unit,
     modifier: Modifier = Modifier
 ) {
     if (todos.isEmpty()) {
@@ -107,8 +117,8 @@ private fun TodoList(
     } else {
         LazyColumn(modifier = modifier) {
             items(todos, key = { it.id }) {
-                TodoItem(it, onCheckChanged, modifier = Modifier.animateItem())
-                HorizontalDivider()
+                SwipeableTodoItem(it, onCheckChanged, onDelete, modifier = Modifier.animateItem())
+//                HorizontalDivider()
             }
         }
     }
@@ -143,4 +153,88 @@ private fun TodoItem(
             .clip(MaterialTheme.shapes.large)
             .background(MaterialTheme.colorScheme.background)
     )
+}
+
+@Composable
+private fun SwipeableTodoItem(
+    todo: Todo,
+    onCheckChanged: (Todo, Boolean) -> Unit,
+    onDelete: (Todo) -> Unit,
+    modifier: Modifier = Modifier
+) {
+    val dismissState = rememberSwipeToDismissBoxState(
+        positionalThreshold = { totalDistance -> totalDistance * 0.3f }
+    )
+
+    LaunchedEffect(dismissState.currentValue) {
+        when (dismissState.currentValue) {
+            SwipeToDismissBoxValue.StartToEnd -> {
+                onCheckChanged(todo, true)
+                dismissState.snapTo(SwipeToDismissBoxValue.Settled)
+            }
+
+            SwipeToDismissBoxValue.EndToStart -> {
+                onDelete(todo)
+                dismissState.snapTo(SwipeToDismissBoxValue.Settled)
+            }
+
+            SwipeToDismissBoxValue.Settled -> Unit
+        }
+    }
+
+    SwipeToDismissBox(
+        state = dismissState,
+        modifier = modifier,
+        backgroundContent = { TodoItemDismissBackground(dismissState) },
+        enableDismissFromStartToEnd = true,
+        enableDismissFromEndToStart = true
+    ) {
+        TodoItem(
+            todo,
+            onCheckChanged,
+        )
+    }
+}
+
+@Composable
+private fun TodoItemDismissBackground(
+    dismissState: SwipeToDismissBoxState,
+    modifier: Modifier = Modifier
+) {
+    val backgroundColor = when (dismissState.dismissDirection) {
+        SwipeToDismissBoxValue.EndToStart -> MaterialTheme.colorScheme.errorContainer
+        SwipeToDismissBoxValue.StartToEnd -> MaterialTheme.colorScheme.primaryContainer
+        SwipeToDismissBoxValue.Settled -> Color.Transparent
+    }
+
+    Box(
+        modifier = modifier
+            .fillMaxSize()
+            .background(backgroundColor)
+            .padding(12.dp, 8.dp),
+    ) {
+
+        when (dismissState.dismissDirection) {
+            SwipeToDismissBoxValue.StartToEnd -> {
+                Icon(
+                    Icons.Default.Check,
+                    contentDescription = "Check completed",
+                    tint = MaterialTheme.colorScheme.onPrimaryContainer,
+                    modifier = Modifier.align(Alignment.CenterStart)
+                )
+            }
+
+            SwipeToDismissBoxValue.EndToStart -> {
+                Icon(
+                    Icons.Default.Delete,
+                    contentDescription = "Delete task",
+                    tint = MaterialTheme.colorScheme.onErrorContainer,
+                    modifier = Modifier.align(Alignment.CenterEnd)
+
+                )
+            }
+
+            SwipeToDismissBoxValue.Settled -> Unit
+        }
+    }
 }
