@@ -2,8 +2,10 @@ package com.cy.practice.todo.ui.screen.todo_list
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.material3.Button
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.ListItem
@@ -25,16 +27,29 @@ import com.cy.practice.todo.domain.model.Todo
 @Composable
 fun TodoListScreen(modifier: Modifier = Modifier, vm: TodoListViewModel = hiltViewModel()) {
     val uiState by vm.uiState.collectAsStateWithLifecycle()
-    TodoListScreen(uiState, modifier)
+
+    TodoListScreen(uiState, vm::onAction, modifier)
 }
 
 @Composable
 fun TodoListScreen(
     state: TodoListState,
+    onAction: (TodoListAction) -> Unit,
     modifier: Modifier = Modifier
 ) {
 
-    TodoList(state.todos, {_, _ ->}, modifier=modifier)
+    Column( modifier=modifier) {
+        TodoList(
+            state.todos,
+            {todo, isChecked ->
+                onAction(TodoListAction.EditTodo(todo.copy(isDone = isChecked)))
+            },
+            modifier=Modifier.weight(1f)
+        )
+        Button(onClick = {onAction(TodoListAction.AddTodo)} ) {
+            Text("Add Task")
+        }
+    }
 }
 
 
