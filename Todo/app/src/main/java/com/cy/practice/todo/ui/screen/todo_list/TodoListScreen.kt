@@ -20,11 +20,8 @@ import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
-import androidx.compose.runtime.saveable.rememberSaveable
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
@@ -32,7 +29,6 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.cy.practice.todo.R
 import com.cy.practice.todo.domain.model.Todo
-import com.cy.practice.todo.ui.screen.todo_list.component.NewTodoBottomSheet
 import com.cy.practice.todo.ui.screen.todo_list.component.TodoList
 import com.cy.practice.todo.ui.theme.SimpleTodoTheme
 import com.cy.practice.todo.util.ObserveAsEvents
@@ -40,7 +36,11 @@ import kotlinx.coroutines.launch
 
 
 @Composable
-fun TodoListScreen(modifier: Modifier = Modifier, vm: TodoListViewModel = hiltViewModel()) {
+fun TodoListScreen(
+    onAddTodo: () -> Unit,
+    modifier: Modifier = Modifier,
+    vm: TodoListViewModel = hiltViewModel()
+) {
     val uiState by vm.uiState.collectAsStateWithLifecycle()
 
     val snackbarHostState = remember { SnackbarHostState() }
@@ -63,19 +63,18 @@ fun TodoListScreen(modifier: Modifier = Modifier, vm: TodoListViewModel = hiltVi
             else -> Unit
         }
     }
-    TodoListScreen(uiState, vm::onAction, modifier, snackbarHostState)
+    TodoListScreen(uiState, onAddTodo, vm::onAction, modifier, snackbarHostState)
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun TodoListScreen(
     state: TodoListState,
+    onAddTodo: () -> Unit,
     onAction: (TodoListAction) -> Unit,
     modifier: Modifier = Modifier,
     snackbarHostState: SnackbarHostState = remember { SnackbarHostState() },
 ) {
-    var showAddTask by rememberSaveable { mutableStateOf(false) }
-
     Scaffold(
         modifier = modifier,
         topBar = {
@@ -96,7 +95,7 @@ fun TodoListScreen(
             )
 
             TextButton(
-                onClick = { showAddTask = true },
+                onClick = onAddTodo,
                 modifier = Modifier.fillMaxWidth()
             ) {
                 Icon(
@@ -108,15 +107,6 @@ fun TodoListScreen(
                 Text("Add Task")
             }
         }
-    }
-
-
-
-    if (showAddTask) {
-        NewTodoBottomSheet(
-            {showAddTask = false},
-            {todo -> onAction(TodoListAction.AddTodo(todo))}
-        )
     }
 }
 
@@ -135,6 +125,7 @@ fun TodoScreenPreview(modifier: Modifier = Modifier) {
     SimpleTodoTheme {
         TodoListScreen(
             state = state,
+            onAddTodo = {},
             onAction = {}
         )
     }
