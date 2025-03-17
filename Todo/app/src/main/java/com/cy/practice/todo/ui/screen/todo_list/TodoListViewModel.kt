@@ -5,10 +5,12 @@ import androidx.lifecycle.viewModelScope
 import com.cy.practice.todo.domain.model.Todo
 import com.cy.practice.todo.domain.repository.TodoRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
+import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import timber.log.Timber
@@ -22,10 +24,13 @@ class TodoListViewModel @Inject constructor(
     private val _uiState = MutableStateFlow(TodoListState())
     val uiState = _uiState.asStateFlow()
 
+    private val _event = Channel<TodoListEvent>()
+    val event = _event.receiveAsFlow()
+
     init {
         todoRepository.getTodoList()
             .onEach { todos ->
-                todos.forEach{ Timber.d(it.toString())}
+                //todos.forEach{ Timber.d(it.toString())}
 
                 _uiState.update { state ->
                     state.copy(todos = todos.sortedBy { it.isDone })
@@ -45,18 +50,21 @@ class TodoListViewModel @Inject constructor(
     private fun addTodo(newTodo: Todo) {
         viewModelScope.launch {
             todoRepository.insert(newTodo)
+            _event.send(TodoListEvent.TodoSaved)
         }
     }
 
     private fun editTodo(updatingTodo: Todo) {
         viewModelScope.launch {
             todoRepository.update(updatingTodo)
+            _event.send(TodoListEvent.TodoSaved)
         }
     }
 
     private fun deleteTodo(deletingTodo: Todo) {
         viewModelScope.launch {
             todoRepository.delete(deletingTodo)
+            _event.send(TodoListEvent.TodoDeleted(deletingTodo))
         }
     }
 
