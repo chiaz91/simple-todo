@@ -1,5 +1,6 @@
 package com.cy.practice.todo.ui.screen.add_todo
 
+import android.widget.Toast
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.consumeWindowInsets
@@ -23,6 +24,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -36,10 +38,14 @@ fun AddTodoScreen(
     vm: AddTodoViewModel = hiltViewModel()
 ) {
     val uiState by vm.uiState.collectAsStateWithLifecycle()
+    val context = LocalContext.current
 
     ObserveAsEvents(vm.event) { event ->
         when (event) {
             is AddTodoEvent.TodoSaved -> { onSaved(true) }
+            is AddTodoEvent.Error -> {
+                Toast.makeText(context, event.message, Toast.LENGTH_SHORT).show()
+            }
         }
     }
 

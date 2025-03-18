@@ -91,7 +91,7 @@ fun TodoListScreen(
                     onAction(TodoListAction.EditTodo(todo.copy(isDone = isChecked)))
                 },
                 { todo -> onAction(TodoListAction.DeleteTodo(todo)) },
-                modifier = Modifier.weight(1f)
+                modifier = Modifier.fillMaxWidth().weight(1f)
             )
 
             TextButton(

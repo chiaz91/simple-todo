@@ -33,11 +33,25 @@ class AddTodoViewModel @Inject constructor(
 
     private fun saveTask() {
         viewModelScope.launch {
+            val error = validateForm()
+            if (error != null) {
+                _event.send(AddTodoEvent.Error(error))
+                return@launch
+            }
             val state = _uiState.value
             val todo = Todo( title = state.title)
             repository.insert(todo)
             _event.send(AddTodoEvent.TodoSaved)
         }
+    }
+
+    private fun validateForm(): String? {
+        val state = _uiState.value
+        val title = state.title
+        if (title.isBlank()) {
+            return "Title cannot be empty"
+        }
+        return null
     }
 
 }
